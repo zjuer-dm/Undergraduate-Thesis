@@ -85,7 +85,26 @@
         \end{center}	
         \setcounter{subsection}{0}
     }
-}
+
+    \newenvironment{abstract}
+    {
+        \cleardoublepage
+        \section*{摘要}
+        \addcontentsline{toc}{section}{摘要}
+    }
+    {}
+
+    \newenvironment{englishabstract}
+    {
+        \cleardoublepage
+        \section*{Abstract}
+        \addcontentsline{toc}{section}{Abstract}
+    }
+    {}
+
+    \newcommand{\keywords}[1]{\bigskip \noindent \textbf{关键词：} #1}
+    \newcommand{\enkeywords}[1]{\bigskip \noindent \textbf{Key words:} #1}
+
 {
     % graduate
     \newcommand{\checkandinput}[2]

@@ -1,0 +1,16 @@
+\cleardoublepage
+
+\section{相关工作}
+
+\subsection{视觉语言导航 (Vision-Language Navigation)}
+视觉语言导航（VLN）要求智能体根据自然语言指令在三维环境中导航。早期的研究主要聚焦于离散图环境中的导航（如R2R数据集\cite{anderson2018vision}），智能体在预定义的拓扑节点间跳跃。然而，离散环境忽略了真实机器人运动的连续性。为此，Krantz等提出了连续环境下的VLN（VLN-CE\cite{krantz2020beyond}），要求智能体在物理模拟器中进行低级控制（如前进、转向）。针对连续环境中的长程规划问题，ETPNav\cite{etpnav}通过构建进化拓扑图实现了稳健的路径规划。本文的研究基于VLN-CE设置，重点探讨从仿真到实物的连续控制迁移。
+
+\subsection{具身多模态大模型 (Embodied Vision-Language Models)}
+多模态大模型（VLM）通过将图像和文本映射到统一的语义空间，显著提升了机器人的感知能力。OpenVLA\cite{kim2024openvla}和RT-2\cite{brohan2023rt2}等工作展示了端到端视觉-语言-动作（VLA）模型在操纵任务中的强大泛化性。在导航领域，Uni-NaVid\cite{uni_navid}尝试统一不同的导航任务，而OmniVLA\cite{omnivla}则整合了图像、姿态和语言等多种目标形式。
+针对计算效率与几何感知，DINOv2\cite{dinov2_analysis}被证明比常规的CLIP\cite{radford2021learning}编码器具有更强的空间几何理解能力，这对于涉及三维空间关系的导航任务至关重要。本文借鉴了这一发现，将视觉前端从CLIP迁移至DINOv2以增强特征的稳健性。
+
+\subsection{具身决策中的思维链推理 (Chain-of-Thought in Embodied AI)}
+思维链（CoT\cite{wei2022chain}）技术通过显式的逐步推理过程，显著提升了大预言模型在复杂逻辑任务中的表现。在具身智能领域，如何将CoT引入实时决策过程是一个新兴的研究方向。Aux-Think\cite{aux_think}通过辅助监督信号引导模型学习导航逻辑，而Nav-R1\cite{nav_r1}和OctoNav\cite{octonav}则提出了“思维-动作”（Think-Before-Action, TBA）框架，使模型在输出动作指令前先生成环境分析与规划建议。这种范式解决了端到端模型在复杂环境下“盲目决策”的问题，提升了系统的可解释性。
+
+\subsection{强化学习与组相对策略优化 (RL and GRPO)}
+强化学习（RL）是训练具身智能体的主流方法。然而，传统的PPO算法由于依赖价值网络（Value Network），在处理超长文本生成（如CoT序列）时面临收敛困难的问题。受DeepSeek-R1\cite{deepseek_r1}的启发，组相对策略优化（GRPO）算法通过组内样本的相对优势估计（Relative Advantage Estimation），摒弃了显式的临界网络（Critic Network），极大地降低了训练方差并节省了显存开销。GRPO通过可验证的奖励（Verifiable Rewards\cite{verifiable_rewards}），如格式奖励与导航指标奖励，能够有效地激励模型自发地进行逻辑推理。本文将GRPO引入VLN任务，通过多维奖励函数优化机器人的导航效率与指令遵循能力。

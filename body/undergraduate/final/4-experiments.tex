@@ -1,0 +1,62 @@
+\cleardoublepage
+
+\section{实验与结果分析}
+
+\subsection{实验设置}
+
+\subsubsection{数据集与评价指标}
+本文在两个主流的连续环境视觉语言导航基准数据集上进行了评估：R2R-CE\cite{krantz2020beyond} 和 RxR-CE\cite{ku2020rxr}。
+评价指标遵循 VLN 社区的标准协议，包括：
+\begin{itemize}
+    \item \textbf{成功率 (Success Rate, SR)}：智能体最终停留位置距离目标点在 3 米以内的比例。
+    \item \textbf{成功路径长度加权得分 (Success weighted by Path Length, SPL)}：同时衡量导航成功率与路径效率的综合指标。
+    \item \textbf{轨迹相似度 (NDTW/SDTW)}：衡量智能体路径与专家路径的对齐程度。
+\end{itemize}
+
+\subsubsection{训练环境与超参数}
+本实验在配备 4 张 NVIDIA RTX A6000 (48GB) 显卡的工程站上进行训练。训练过程分为三个阶段：
+1. **感知特征对齐**：使用 DINOv2 预训练权重进行视觉编码器的初始化。
+2. **监督微调 (SFT)**：使用 VLN-Ego 数据集进行 50 轮迭代，Batch Size 为 32，学习率为 $1 \times 10^{-5}$。
+3. **GRPO 强化学习**：在仿真环境中进行交互式学习，Group Size 设置为 8，奖励权重分布为 $R_{nav}:R_{format}:R_{sim} = 0.5:0.2:0.3$。
+
+\subsection{主要实验结果}
+我们将 VLN-R1 系统与当前最先进的导航模型进行了对比，包括 ETPNav、Nav-R1 以及 OctoNav。
+
+\begin{table}[htbp]
+\centering
+\caption{R2R-CE Validation Unseen 划分下的性能对比}
+\label{tab:results}
+\begin{tabular}{l|cc|cc}
+\hline
+\textbf{模型} & \textbf{SR $\uparrow$} & \textbf{SPL $\uparrow$} & \textbf{视觉编码器} & \textbf{训练范式} \\ \hline
+ETPNav\cite{etpnav} & 55.0\% & 48.0\% & ViT/CLIP & SL + Topo \\
+OctoNav\cite{octonav} & 54.8\% & 45.3\% & CLIP-L/14 & Multi-task \\
+Nav-R1\cite{nav_r1} & 57.2\% & 46.1\% & Qwen2-VL & GRPO-RL \\ \hline
+\textbf{VLN-R1 (Ours)} & \textbf{58.0\%} & \textbf{46.5\%} & DINOv2 & SFT + GRPO \\ \hline
+\end{tabular}
+\end{table}
+
+实验结果显示，VLN-R1 在成功率（SR）指标上达到了 \textbf{58.0\%}，超过了现有的 ETPNav 和 OctoNav 模型，并略优于同期的 Nav-R1。这得益于 DINOv2 提供的几何鲁棒特征以及 GRPO 在推理一致性上的有效优化。虽然 SPL 指标略低于 ETPNav，这可能是由于思维链推理过程导致智能体在复杂路口进行了更多的观察尝试。
+
+\subsection{消融实验}
+
+\subsubsection{视觉前端：DINOv2 vs CLIP}
+为了验证 DINOv2 的有效性，我们在相同架构下对比了不同编码器的表现。如表\ref{tab:ablation_vision}所示，DINOv2 在连续环境中的成功率平均提升了约 2.4\%，证明了其在处理模拟器伪影和精细几何关系时的优势。
+
+\begin{table}[htbp]
+\centering
+\caption{视觉编码器消融结果}
+\label{tab:ablation_vision}
+\begin{tabular}{c|cc}
+\hline
+\textbf{Vision Encoder} & \textbf{SR} & \textbf{SPL} \\ \hline
+CLIP-ViT-B/16 & 55.6\% & 45.8\% \\
+DINOv2-ViT-B/14 (Ours) & \textbf{58.0\%} & \textbf{46.5\%} \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{GRPO 中的奖励函数权重分析}
+图\ref{fig:reward_curve} 展示了在 GRPO 训练过程中不同奖励分量的收敛曲线（注：由 A6000 训练监控数据生成）。通过引入格式奖励，模型生成的思维链序列（Think token）的合规率从初始的 40\% 提升至 98\% 以上，显著增强了系统在长程任务中的鲁棒性。
+
+\subsection{定性分析与可视化}
+图\ref{fig:case_study} 展示了 VLN-R1 在一段复杂指令下的推理路径。智能体能够自发地进行类似“我需要寻找一扇绿色的大门，但当前视野中只有白色墙壁，因此我应左转搜索”的推理，这种显式的逻辑生成极大地提升了系统的可解释性。

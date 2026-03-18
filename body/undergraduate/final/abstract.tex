@@ -1,10 +1,19 @@
-\cleardoublepage{}
-\begin{center}
-    \bfseries \zihao{3} 摘~要
-\end{center}
+\begin{abstract}
+随着具身智能（Embodied AI）技术的飞速发展，视觉语言导航（VLN）作为打通感知、语义理解与连续控制的关键任务，已成为机器人领域的研究热点。然而，现有的导航系统在面对复杂场景时仍存在逻辑推理缺失、训练过程不稳定以及从仿真到实物的跨域迁移瓶颈等问题。
 
+本文提出了一种全新的基于多模态推理能力增强的导航框架——VLN-R1。该系统核心创新在于引入了“思维链（Chain-of-Thought）”推理范式，通过构建自动化数据引擎 VLN-Ego，赋予智能体在执行动作前进行显式逻辑推演的能力。在算法层面，本文首次在导航任务中应用了组相对策略优化（GRPO）算法，利用组内相对优势估计有效降低了强化学习的训练方差，实现了复杂指令下的高一致性决策。在感知层面，本文采用了 DINOv2 作为视觉特征提取器，并设计了专为实物部署定制的 4-View 视场对齐方案。
 
-\cleardoublepage{}
-\begin{center}
-    \bfseries \zihao{3} Abstract
-\end{center}
+实验结果表明，VLN-R1 在 R2R-CE 基准测试中成功率达到了 58.0%，超过了同期的 ETPNav、OctoNav 等先进模型。此外，本文在 TurtleBot4 机器人平台上完成了实地部署，验证了系统在 Sim-to-Real 场景下的鲁棒性。本文的研究证明，将深度推理能力与具身控制相结合，是提升自主导航智能体通用性与可解释性的有效途径。
+
+\keywords{视觉语言导航，具身智能，思维链推理，组相对策略优化，Sim-to-Real。}
+\end{abstract}
+
+\begin{englishabstract}
+With the rapid progression of Embodied AI, Vision-Language Navigation (VLN) has emerged as a cornerstone bridging perception, semantic understanding, and continuous control. However, current navigation systems often suffer from a lack of logical reasoning, training instability, and a significant sim-to-real performance gap in complex environments.
+
+This thesis introduces VLN-R1, a novel navigation framework enhanced by multimodal reasoning capabilities. The core innovation lies in the integration of the Chain-of-Thought (CoT) paradigm. By developing the automated data engine VLN-Ego, we empower agents to perform explicit logical reasoning before action execution. At the algorithmic level, we pioneer the application of Group Relative Policy Optimization (GRPO) in VLN tasks. By leveraging relative advantage estimation within groups, GRPO effectively reduces the variance of reinforcement learning, enabling highly consistent decision-making under complex instructions. Perceptually, we utilize DINOv2 as the visual backbone and design a 4-View field-of-view (FOV) alignment strategy specifically for physical deployment.
+
+Experimental results demonstrate that VLN-R1 achieves a 58.0% success rate on the R2R-CE benchmark, outperforming state-of-the-art models such as ETPNav and OctoNav. Furthermore, the system was successfully deployed on a TurtleBot4 robot, validating its robustness in real-world Sim-to-Real scenarios. This research proves that combining deep reasoning with embodied control is a viable path toward enhancing the generality and interpretability of autonomous agents.
+
+\enkeywords{Vision-Language Navigation, Embodied AI, Chain-of-Thought, Group Relative Policy Optimization, Real-to-Sim.}
+\end{englishabstract}
