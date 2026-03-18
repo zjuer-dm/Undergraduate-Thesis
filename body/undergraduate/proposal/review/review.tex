@@ -1,0 +1,334 @@
+\cleardoublepage
+\newrefsection
+\chapter{文献综述}
+
+\section{引言}
+具身智能（Embodied AI）代表了人工智能从“互联网AI”向“物理世界AI”跨越的关键一步。不同于传统的计算机视觉（CV）或自然语言处理（NLP）任务，具身智能要求智能体（Agent）不仅能够被动地处理输入数据，更能够通过传感器（如摄像头、雷达）主动感知非结构化的物理环境，进行复杂的语义推理，并输出连续的动作指令以改变自身状态或环境状态 \cite{omnivla, bridging_gap}。在这一领域中，视觉语言导航（Vision-and-Language Navigation, VLN）作为核心基石任务，构建了一个极具挑战性的测试平台：它要求机器人根据自然语言指令（例如，“穿过厨房，在冰箱旁边的白色门前停下”），在未知的、连续的三维空间中进行长时程的决策与控制 \cite{anderson2018vision, krantz2020beyond}。
+
+VLN的研究历程在过去十年中经历了一场深刻的范式转移。早期的研究主要集中在“模块化几何导航”范式上。这类方法通常依赖于同步定位与地图构建（SLAM）技术预先构建环境的度量地图，或者将连续空间离散化为由导航路点（Navigable Waypoints）组成的拓扑图（Topological Graph）。在这种框架下，导航问题被简化为在离散图结构上的搜索与路径规划问题。虽然这种方法在动作空间上较为简化且具备一定的可解释性，但其在面对真实世界中复杂的、动态变化的连续环境（VLN-CE）时，往往暴露出灵活性不足、对感知噪声敏感以及难以处理多模态语义对齐等局限性 \cite{bridging_gap, savva2019habitat}。
+
+近年来，随着大语言模型（LLM）和多模态大模型（MLLM）的爆发式增长，VLN的研究重心迅速向“端到端认知导航”转移。新一代的视觉-语言-动作（Vision-Language-Action, VLA）模型试图将海量的世界知识和强大的逻辑推理能力引入到导航策略中。这些模型不再依赖预定义的地图或离散的动作空间，而是尝试直接建立从原始视觉观测（RGB-D图像、视频流）和语言指令到底层运动控制指令（如线速度、角速度）的映射  。
+
+然而，VLA范式的兴起也带来了全新的挑战。现有的VLA模型在实际部署中主要面临三大核心瓶颈：
+\begin{itemize}
+    \item \textbf{感知与表征的割裂}：传统的视觉编码器（如CLIP）虽然擅长语义对齐，但在处理空间几何关系、细粒度物体定位（如门把手、微小的路标）时往往力不从心。如何赋予大模型精确的几何感知能力（Geometric Awareness）成为关键  。
+    \item \textbf{推理链条的“黑盒化”与崩塌}：端到端的模型往往缺乏显式的推理过程，导致在长时程任务中容易出现“幻觉”或推理中断。虽然思维链（Chain-of-Thought, CoT）在NLP领域取得了巨大成功，但将其直接应用于实时导航时，面临着推理延迟与动作执行的矛盾，以及测试时推理崩塌（Test-time Reasoning Collapse）的风险  。
+    \item \textbf{强化学习的样本效率与稳定性}：为了解决分布外泛化（OOD）问题，强化学习（RL）微调是必经之路。然而，传统的PPO算法在大模型上的显存开销巨大且训练不稳定。如何利用可验证奖励（Verifiable Rewards）和高效的优化策略（如GRPO）来提升VLA模型的鲁棒性，是当前的研究热点  。
+\end{itemize}
+
+本报告将系统综述具身导航领域的最新进展，深入探讨从特征提取器迁移、结构化与非结构化导航范式的博弈、认知推理范式的演进，到基于大模型的强化学习微调策略。特别地，我们将重点分析以 ETP-R1   为代表的新一代框架，探讨其如何通过融合图优化的拓扑规划与大模型的强化微调，解决上述核心挑战，从而定义具身导航的未来方向。
+
+\section{视觉感知与表征学习：从语义对齐到动态高分辨率}
+视觉感知模块是导航智能体的“眼睛”，决定了其对环境理解的上限。在VLN任务中，视觉编码器不仅需要识别场景中的物体（“这是什么”），更需要精确感知物体的空间位置、几何结构以及可通行性（“在哪里”、“能否通过”）。这一需求推动了视觉特征编码器从早期的分类导向模型向几何感知与高分辨率理解导向的演进。
+
+\subsection{传统对比学习的局限性：CLIP}
+早期的VLN系统主要依赖在ImageNet上预训练的ResNet提取视觉特征。随后，CLIP（Contrastive Language-Image Pre-training）凭借其在大规模图文对数上学习到的强大语义对齐能力，成为了VLA模型的主流视觉主干 \cite{radford2021learning}。CLIP通过将图像和文本映射到同一潜空间，使得智能体能够实现零样本（Zero-Shot）的物体识别和指令匹配  。
+
+然而，CLIP的训练目标主要是全局语义匹配，这导致其生成的特征在空间信息上是高度压缩和抽象的。
+\begin{itemize}
+    \item \textbf{空间信息丢失}：CLIP倾向于关注图像中“有什么”，而忽略“在哪里”。对于导航任务而言，区分“左边的门”和“右边的门”，或者判断前方走廊的深度，是至关重要的几何信息，而这些在CLIP的特征中往往被模糊化。
+    \item \textbf{几何感知缺失}：CLIP难以捕捉细粒度的几何结构，如物体的边缘、平面的法向量等。这导致基于CLIP的导航智能体在避障、穿越狭窄通道或进行精细操作时表现不佳 \cite{dinov2}。
+\end{itemize}
+
+\subsection{自监督视觉Transformer的几何涌现：DINOv2}
+为了弥补对比学习在几何感知上的缺陷，具身智能领域开始转向基于掩码图像建模（Masked Image Modeling）和自蒸馏（Self-Distillation）的视觉Transformer。其中，DINOv2 \cite{dinov2} 被广泛认为是当前最先进的视觉表征模型之一。
+
+\subsubsection{DINOv2的核心机制与特性}
+DINOv2不依赖文本监督，而是通过大规模的图像自监督学习来训练。其核心机制结合了DINO（自蒸馏）和iBOT（掩码图像建模）的损失函数，迫使学生网络在局部掩码视图下重建教师网络的全局视图特征。这种训练方式赋予了DINOv2独特的\textbf{几何涌现属性（Emergent Geometric Properties）}：
+\begin{itemize}
+    \item \textbf{PCA可视化与无监督分割}：对DINOv2输出的Patch特征进行主成分分析（PCA），可视化结果显示其主成分能够自然地将前景物体与背景分离，甚至能够区分物体的不同语义部分（如动物的头部、腿部）。这意味着DINOv2在没有任何监督信号的情况下，显式地学习到了场景的物体布局和边界信息 \cite{dinov2_analysis}。
+    \item \textbf{鲁棒的深度与匹配能力}：研究表明，DINOv2的特征包含了丰富的深度线索和密集对应关系（Dense Correspondence）。在单目深度估计和语义分割任务中，冻结的DINOv2特征往往能超越许多有监督训练的专用模型。
+\end{itemize}
+
+\subsubsection{DINOv2在导航中的应用价值}
+对于ETPNav   和 ETP-R1   这类强调拓扑建图的系统而言，DINOv2的引入至关重要。
+\begin{itemize}
+    \item \textbf{路点预测的鲁棒性}：ETPNav依赖于预测周围环境的可通行路点（Waypoints）。使用DINOv2特征可以显著提高在低纹理区域（如白墙、光照不足的走廊）的路点预测准确率，因为其特征对光照和纹理变化具有更强的鲁棒性。
+    \item \textbf{更精准的节点定位}：在拓扑图构建过程中，判断当前观测是否属于已访问节点（闭环检测）是核心难题。DINOv2提供的细粒度几何特征使得场景匹配更加精确，有效减少了感知混淆带来的建图错误 \cite{nav_r1}。
+\end{itemize}
+
+\subsection{动态高分辨率策略：InternVL 2.5}
+在真实世界的机器人部署中，相机输入的视场角（FOV）、分辨率和纵横比往往是多变且极端的。例如，寻找门牌号可能需要极高的分辨率，而全景感知则需要处理长宽比极大的图像。传统的视觉Transformer（ViT）通常将输入强制缩放至固定分辨率（如 $224 \times 224$），这会导致严重的几何畸变和细粒度信息的丢失  。
+
+InternVL 2.5 \cite{internvl2_5} 提出的一系列视觉增强策略，为解决这一问题提供了标准范式，尤其适用于需要精细感知的导航任务。
+
+\subsubsection{动态图块（Dynamic Tiling）策略}
+InternVL 2.5 摒弃了暴力的缩放操作，转而采用动态分块机制：
+\begin{itemize}
+    \item \textbf{自适应网格切分}：根据输入图像的原始纵横比和分辨率，模型自动选择最佳的网格（Grid）配置（例如 $1\times 2$, $2\times 2$ 等），将高分辨率图像切分为多个 $448 \times 448$ 的局部图块（Tiles）。
+    \item \textbf{全局缩略图（Thumbnail）}：为了防止模型在关注局部细节时丢失全局上下文（例如，看到“把手”却不知道它属于“冰箱”还是“门”），InternVL 2.5 还会输入一张降采样后的全图缩略图。
+    \item \textbf{特征融合}：来自局部高分辨率图块的Visual Tokens和来自全局缩略图的Tokens在序列维度上进行拼接，共同输入到LLM中。这种设计使得模型既能“看清”微小的路标文字，又能“看懂”房间的整体布局 \cite{internvl2_5}。
+\end{itemize}
+
+\subsubsection{像素去洗牌（Pixel Unshuffle）与效率平衡}
+为了应对高分辨率带来的Token数量爆炸问题，InternVL 2.5 引入了Pixel Unshuffle操作，将特征图的空间维度降低（如 $H/2, W/2$）并扩充通道维度（$4C$），从而在不损失信息的前提下将Visual Tokens的数量减少为原来的四分之一。这对于需要实时推理的导航机器人来说，是平衡感知精度与计算延迟的关键技术  。
+
+\subsection{长上下文的高效注意力机制：DeepSeek-V3}
+随着导航任务时长的增加，机器人积累的视觉历史信息（Video History）呈线性增长。在“慢思考”系统（Slow System）中，模型需要回溯整个历史轨迹来进行全局规划或纠错。标准Transformer的注意力机制复杂度为 $O(L^2)$，难以处理长达数千帧的视觉历史。
+
+DeepSeek-V3 \cite{deepseek_v3} 提出的 DeepSeek Sparse Attention (DSA) 机制为长时程导航提供了解决方案：
+\begin{itemize}
+    \item \textbf{闪电索引器（Lightning Indexer）}：一个轻量级的、低精度（FP8）的预筛选模块，用于快速扫描整个历史上下文，计算每个Token的相关性评分。
+    \item \textbf{Top-k 动态选择}：基于索引器的评分，仅选取最相关的 Top-k 个Token参与全精度的注意力计算。
+\end{itemize}
+这种设计将长序列处理的复杂度降低到了接近线性 $O(Lk)$，使得导航智能体能够维持极长的“情景记忆”（Episodic Memory），在不显著增加计算负担的情况下，实现对历史观测的有效回溯和利用 \cite{deepseek_v3_analysis}。
+
+\subsection{联合嵌入预测架构：VL-JEPA}
+Meta FAIR 提出的 \textbf{VL-JEPA} \cite{vl_jepa} 代表了视觉语言模型的一种全新范式：\textbf{联合嵌入预测架构（Joint Embedding Predictive Architecture）}。不同于传统VLM在Token空间自回归生成文本，VL-JEPA 在连续嵌入空间中预测目标文本的语义表示，从而将昂贵的数据空间Token生成转化为更高效的潜在空间语义预测。这一设计灵感来源于Yann LeCun提出的世界模型理论：智能系统应该在抽象的表征空间中进行预测和规划，而非在原始数据空间中重建每一个细节。
+
+\subsubsection{VL-JEPA的核心机制与训练策略}
+VL-JEPA 由四个核心组件构成：
+\begin{itemize}
+    \item \textbf{X-Encoder}：采用V-JEPA 2 ViT-L（304M参数）作为视觉编码器，支持图像和视频输入。对于视频输入，以2fps的帧率均匀采样，每帧分辨率为$256^2$。
+    \item \textbf{Predictor}：基于Llama-3.2-1B的最后8层Transformer（490M可训练参数），支持最长512个查询Token。通过禁用因果注意力掩码，实现视觉与文本嵌入的双向联合注意力。
+    \item \textbf{Y-Encoder}：采用EmbeddingGemma-300M作为文本编码器，将目标文本映射到1536维的共享嵌入空间。
+    \item \textbf{Y-Decoder}：仅在推理时按需调用，将预测的嵌入向量解码为人类可读的文本。
+\end{itemize}
+
+训练采用两阶段策略：第一阶段使用大规模图文数据（Datacomp、YFCC-100M、PLM-Video-Auto等）进行无查询预训练，建立稳健的视觉-语言对齐；第二阶段进行查询条件化的监督微调（SFT），赋予模型VQA能力。整个模型仅有1.6B参数，却能在8个视频分类和8个文本-视频检索数据集上超越CLIP、SigLIP2和Perception Encoder等更大规模的基线模型。
+
+\subsubsection{嵌入空间学习的理论优势}
+相比Token空间的自回归生成，嵌入空间预测具有本质性的优势。在原始Token空间中，对于同一输入可能存在多个语义等价但表述不同的有效输出（例如，"灯被关了"和"房间变暗了"）。这些输出在稀疏的one-hot Token空间中几乎正交，因为它们没有重叠的Token。然而，VL-JEPA的Y-Encoder可以将这些语义相近的表述映射到嵌入空间中的邻近点，形成单一紧凑的单峰分布。这意味着模型无需拟合数据空间中多个分离的高密度区域，而只需预测连续嵌入空间中的一个coherent模式，显著简化了学习任务。
+
+\subsubsection{非自回归设计与选择性解码}
+VL-JEPA 的\textbf{非自回归特性}使其能够以单次前向传播生成连续的语义嵌入流，无需逐Token解码。这对需要实时推理的导航机器人至关重要：
+\begin{itemize}
+    \item \textbf{选择性解码（Selective Decoding）}：通过监控嵌入流的语义变化，仅在检测到显著语义偏移（如滑动窗口方差超过阈值）时才触发轻量级Y-Decoder进行解码。实验表明，该策略可减少约2.85倍的解码操作，同时保持与均匀解码相当的CIDEr输出质量。
+    \item \textbf{实时场景语义流}：在智能眼镜、在线动作追踪或导航机器人等实时视频应用中，VL-JEPA 可以持续维护一个"always-on"的语义监控流，仅在必要时生成文本输出，从而实现响应性和效率的最佳平衡。
+    \item \textbf{多模态任务统一}：同一模型架构可以原生支持视觉-文本生成（如captioning）、CLIP风格的开放词汇分类、判别式VQA和文本-视频检索等多种任务，无需任何架构修改。
+\end{itemize}
+
+\subsubsection{对导航任务的启示}
+VL-JEPA 的设计理念与具身导航的需求高度契合：（1）\textbf{实时性}：导航决策需要低延迟响应，嵌入空间预测避免了自回归生成的累积延迟，一次前向传播即可获得语义表征；（2）\textbf{语义一致性}：嵌入空间将语义相似但表述不同的目标映射到邻近点，这对于处理多样化的导航指令（如"去厨房"与"找到冰箱"）尤为重要；（3）\textbf{多任务统一}：同一架构可支持场景分类、目标检索、视觉问答等多种下游任务，与通用导航智能体的多能力需求相符；（4）\textbf{高效推理}：VL-JEPA仅需50\%的可训练参数即可达到更好性能，这对于资源受限的机器人边缘部署具有重要意义。
+
+\section{具身导航的结构化范式：从图规划到大模型端到端}
+导航策略的架构设计决定了智能体如何构建对世界的认知。目前，该领域呈现出“结构化图规划”与“非结构化VLA端到端”两种主流范式的博弈与融合。
+
+\subsection{拓扑规划与图基方法（Graph-based Methods）}
+图基方法的核心理念是将连续的物理世界抽象为离散的\textbf{拓扑图（Topological Graph）}。图中的节点代表可通行的位置（Navigable Locations），边代表位置之间的连通性。这种抽象极大地简化了长时程导航的复杂度。
+
+\subsubsection{ETPNav框架的机制}
+ETPNav (Evolving Topological Planning)   是这一领域的代表性工作。不同于依赖预建地图的方法，ETPNav 具备\textbf{在线建图（Online Mapping）}的能力：
+\begin{itemize}
+    \item \textbf{路点预测与自组织}：在每一步，智能体利用深度图像预测周围环境中的候选路点（Waypoints）。这些路点经过筛选和聚合，动态地加入到拓扑图中。
+    \item \textbf{路点定位（Waypoint Localization）}：ETPNav 设计了一个定位函数 $\mathcal{F}_L$，用于判断当前预测的路点是属于图中的已知节点（闭环检测），还是探索到的新区域。这一机制保证了拓扑图的简洁性和一致性  。
+    \item \textbf{分层控制架构}：ETPNav 将导航解耦为两层：
+    \begin{itemize}
+        \item \textbf{高层规划器（High-Level Planner）}：基于跨模态Transformer，在拓扑图上进行推理，结合语言指令选择下一个“幽灵节点”（Ghost Node，即已感知但未访问的节点）作为子目标。
+        \item \textbf{底层控制器（Low-Level Controller）}：负责生成具体的运动指令（如前进、旋转），并利用启发式策略（如“Tryout”机制）处理避障和死锁恢复。
+    \end{itemize}
+\end{itemize}
+这种分层设计使得高层规划器可以专注于长时程的逻辑推理（如“先去厨房再去卧室”），而无需被底层的运动控制细节所干扰  。
+
+\subsubsection{ETP-R1：图结构与大模型的深度融合}
+虽然ETPNav在结构上具有优势，但早期版本缺乏大模型时代的数据红利和训练范式。ETP-R1   正是为了弥补这一差距而提出的，它代表了图基方法与VLA范式的深度融合：
+\begin{itemize}
+    \item \textbf{联合预训练（Joint Pre-training）}：ETP-R1 打破了数据集之间的壁垒，将R2R（指令跟随）和RxR（多语言、长轨迹）的数据进行统一，训练一个通用的跨模态规划网络。
+    \item \textbf{Gemini赋能的数据引擎}：针对传统合成数据（Speaker Model）语言单一、存在幻觉的问题，ETP-R1 利用 Gemini API 构建了一个高质量的指令标注管道，生成了富含语言多样性和精确几何描述的大规模预训练数据。这使得图规划器能够理解更加复杂和自然的指令  。
+    \item \textbf{闭环强化微调（Closed-Loop RFT）}：这是ETP-R1的核心突破。不同于以往图基方法仅依赖监督学习（SFT），ETP-R1 引入了基于 GRPO 的在线强化学习。智能体在拓扑图上进行完整的轨迹探索，根据最终的任务成功与否获得反馈，从而优化高层的规划策略。这使得模型能够学习到超越专家演示的鲁棒规划能力  。
+\end{itemize}
+
+\subsection{视觉-语言-动作（VLA）端到端模型}
+受 RT-2 \cite{brohan2023rt2} 和 OpenVLA \cite{kim2024openvla} 在机械臂操作领域成功的启发，导航领域也涌现出了类似的通用模型。
+以 NaVid 和 Uni-NaVid \cite{uni_navid} 为代表的VLA模型，试图完全摒弃显式的地图结构，将导航视为一个序列建模问题。
+\begin{itemize}
+    \item \textbf{机制}：模型接收视频流和语言指令作为输入，直接自回归地生成动作Token（如 \texttt{<turn\_left>}, \texttt{<move\_forward>}）。
+    \item \textbf{优势}：理论上具有极高的灵活性，能够适应任意形态的指令和环境，且能充分利用MLLM在大规模数据上预训练的通用知识。
+    \item \textbf{局限性}：
+    \begin{itemize}
+        \item \textbf{上下文爆炸（Context Explosion）}：将长轨迹表示为原始视觉Token序列会消耗巨大的上下文窗口，导致“历史冗余”问题  。
+        \item \textbf{空间结构缺失}：缺乏显式的图结构记忆，使得模型在需要“回溯”或“探索未访问区域”时，必须从隐式的历史Token中重构空间关系，这极易出错。
+        \item \textbf{开环推理（Open-Loop Reasoning）}：许多VLA模型仅通过离线行为克隆（Behavior Cloning）训练，缺乏与环境交互的纠错能力  。
+    \end{itemize}
+\end{itemize}
+
+\subsection{路径条件化的混合范式：UrbanVLA}
+UrbanVLA \cite{urbanvla} 提出了一种面向城市微出行的混合范式，展示了如何将高层拓扑指引与底层视觉控制结合。这与 GNM \cite{shah2023gnm} 和 NoMaD \cite{sridhar2024nomad} 等通用导航策略一脉相承，强调在缺乏精确地图时的鲁棒性。
+\begin{itemize}
+    \item \textbf{问题背景}：城市导航往往依赖粗糙的地图导航（如Google Maps）提供的路径，但这些路径在局部几何上是不精确的（Noisy Waypoints）。
+    \item \textbf{启发式轨迹提升（Heuristic Trajectory Lifting, HTL）}：UrbanVLA 引入了HTL算法，在训练阶段人为地向Ground Truth路径中注入噪声，模拟真实的GPS误差。这迫使VLA策略学会忽略不精确的坐标指引，转而依赖视觉观测（如“看到人行道后右转”）来执行具体的运动控制 \cite{urbanvla}。
+    \item \textbf{意义}：这种设计证明了VLA模型可以通过结构化的输入（如Roadbook）来增强对特定任务的适应性，为室内导航中结合拓扑图与视觉策略提供了借鉴。
+\end{itemize}
+
+\section{具身推理范式：从直觉反应到深思熟虑}
+具身智能的核心飞跃在于从“反射式”智能（Reflexive，输入即输出）向“反思式”智能（Reflective，推理后决策）的转变。这一趋势深受认知心理学中“系统1（快思考）”与“系统2（慢思考）”理论的影响，并广泛借鉴了思维链（Chain-of-Thought, CoT）\cite{wei2022chain} 在大语言模型中的成功经验。
+
+\subsection{行动前的显式思考（Think-Before-Action, TBA）}
+OctoNav-R1   是 Think-Before-Action (TBA) 范式的典型代表。它主张智能体在执行任何物理动作之前，必须先生成一段显式的语言推理轨迹。
+\begin{itemize}
+    \item \textbf{实现机制}：OctoNav 构建了一个大规模的 TBA-CoT 数据集。模型在每一步不仅输出动作 $a_t$，而是输出一个结构化的序列：\texttt{<think> 当前位于客厅，左侧有沙发... 指令要求去卧室... 因此应该向右转进入走廊... </think> <action> Turn\_Right </action>}。
+    \item \textbf{优势}：
+    \begin{itemize}
+        \item \textbf{可解释性与纠错}：显式的推理使得模型的决策过程透明化。例如，如果模型在\texttt{<think>}阶段识别错了物体，我们可以直接定位错误源头。
+        \item \textbf{任务对齐}：强制模型将视觉观测与指令进行显式比对（Grounding），减少了因为遗忘指令而导致的导航失败  。
+    \end{itemize}
+    \item \textbf{训练策略}：采用混合训练范式（Hybrid Training Paradigm），首先通过 TBA-SFT 进行冷启动，学习推理格式；然后通过 Nav-GRPO 进行强化微调，直接优化推理过程对最终导航成功率的贡献  。
+\end{itemize}
+
+\subsection{快慢双系统协同（Fast-in-Slow）}
+虽然TBA提升了推理深度，但在每一步都生成长文本会带来巨大的\textbf{推理延迟（Latency）}，这对于需要实时避障的机器人来说是不可接受的。Nav-R1   提出了 Fast-in-Slow 范式来解决这一矛盾。该方法借鉴了 3D-LLM \cite{hong20233dllm} 和 LEO \cite{huang2024leo} 在三维场景理解上的优势，利用慢系统处理长时程语义。
+\begin{itemize}
+    \item \textbf{慢系统（System 2）}：一个高容量的多模态大模型，运行频率较低（如每数秒一次）。它处理完整的长时程视觉历史和复杂的语言指令，生成高层的“潜变量规划”（Latent Plan）或语义摘要。这一过程负责处理全局导航逻辑和纠错。
+    \item \textbf{快系统（System 1）}：一个轻量级的策略网络，运行频率极高（如10Hz以上）。它仅接收当前的视觉观测和来自慢系统的\textbf{潜变量指引（Latent Guidance）}，快速输出运动控制指令。
+    \item \textbf{异步协同}：两个系统并行运行，互不阻塞。快系统保证了机器人的实时响应能力（如紧急避障），而慢系统则在后台不断更新全局策略，确保导航方向的正确性  。这种架构完美地平衡了语义一致性（Semantic Coherence）与控制实时性（Real-time Control）。
+\end{itemize}
+
+\subsection{辅助推理与内化（Auxiliary Thinking / Aux-Think）}
+Aux-Think   揭示了一个被称为“\textbf{测试时推理崩溃}”（Test-time Reasoning Collapse, TRC）的关键现象：在未知的测试环境中，如果强迫模型生成CoT，模型可能会产生“幻觉”（例如，错误地推理出“我已经到了厨房”），并基于这个错误的推理执行错误的动作，导致连锁反应般的失败。
+\begin{itemize}
+    \item \textbf{核心思想：推理内化}。Aux-Think 提出将CoT作为一种\textbf{训练时的辅助监督信号（Auxiliary Supervision）}，而非测试时的必要步骤。
+    \item \textbf{解耦训练}：在训练阶段，模型同时执行两个任务：(1) 主要任务：预测导航动作；(2) 辅助任务：生成CoT解释。通过共享编码器参数，推理能力被“内化”到模型的特征表示中。
+    \item \textbf{No-Think 测试}：在测试阶段，模型丢弃推理头，直接输出动作。这样既保留了推理训练带来的特征增强优势，又避免了测试时显式推理带来的幻觉风险和计算开销  。这一策略被证明在数据效率和最终成功率上均达到了帕累托最优（Pareto-optimal）。
+\end{itemize}
+
+\subsection{连续视觉思维链（Chain-of-Visual-Thought, CoVT）}
+除了文本推理，CoVT   探索了在\textbf{视觉模态}进行推理的可能性。
+\begin{itemize}
+    \item \textbf{视觉Token}：CoVT 不再强迫模型用语言描述场景，而是让模型预测一系列连续的“视觉Token”。这些Token可以解码为语义分割掩码、深度图或物体特征。
+    \item \textbf{视觉推理链}：模型可以在潜在空间中进行“视觉想象”（Visual Imagination），例如“如果我分割出这个物体，它是否匹配目标特征？”。这种基于像素级致密信息的推理，比纯文本推理更具几何感知力，能够有效解决文本难以描述的空间细节问题。
+\end{itemize}
+
+\subsubsection{深度自进化推理的理论基础：DSER}
+尽管现有的 CoT 方法在导航中表现优异，但在面对极难任务时，模型的验证能力往往不足。DSER (Deep Self-Evolving Reasoning) \cite{dser_reasoning} 为迭代式推理提供了新的概率论解释。DSER 将多轮推理过程建模为马尔可夫链（Markov Chain）。理论证明，只要模型改进答案的概率（Probability of Improvement）略微高于退化的概率，通过足够长的自进化迭代，系统的状态分布必然会收敛到正确解的稳态。这一理论为 Nav-R1 等方法中采用的 System 2 慢思考机制提供了坚实的数学支撑，即通过增加测试时的计算量（Test-time Computation）来换取更高的决策准确率。
+
+\section{强化学习与微调策略：迈向可验证的具身智能}
+监督微调（SFT/Behavior Cloning）虽然能让模型模仿专家的行为，但受限于专家数据的质量和覆盖范围，难以应对分布外（OOD）场景。强化学习（RL）允许智能体在仿真环境中通过试错（Trial-and-Error）来自我进化，是提升具身智能体鲁棒性的关键。当前，RL微调正经历从PPO向GRPO和可验证奖励的转型。
+
+\subsection{从PPO到GRPO：大模型RL的高效化}
+近端策略优化（PPO）是RLHF的标配算法，但它需要维护一个与策略网络同等规模的Critic（价值）网络，显存开销巨大且训练极其不稳定。受 DeepSeek-R1 \cite{deepseek_r1} 的启发，具身导航领域开始广泛采用\textbf{组相对策略优化（Group Relative Policy Optimization, GRPO）}。
+
+\subsubsection{GRPO的核心机制}
+GRPO 摒弃了 Critic 网络，转而采用基于组（Group）的相对优势估计：
+\begin{itemize}
+    \item \textbf{采样}：对于同一个输入（如当前的视觉观测+指令），策略网络采样一组 $G$ 个不同的输出轨迹 $\{o_1, o_2,..., o_G\}$。
+    \item \textbf{评分}：利用环境或奖励模型计算每个输出的奖励值 $r_i$。
+    \item \textbf{优势计算}：每个样本的优势（Advantage） $A_i$ 基于其奖励值相对于组内平均值的归一化结果计算：
+    \begin{equation}
+        A_i = \frac{r_i - \text{mean}(\{r_1,..., r_G\})}{\text{std}(\{r_1,..., r_G\})}
+    \end{equation}
+    \item \textbf{更新}：优化策略以提高高优势样本的概率。
+\end{itemize}
+这种方法无需额外的价值网络，极大地降低了显存需求，且对于具有明确成败标准的推理和导航任务表现出极高的稳定性 \cite{deepseek_r1}。
+
+\subsection{扩散语言模型：从自回归到并行生成}
+自回归（AR）范式虽然在大语言模型中取得了巨大成功，但其固有的顺序生成特性带来了严重的推理瓶颈：严格的从左到右因果依赖阻止了并行化，导致延迟随序列长度线性增长。\textbf{离散扩散语言模型（Discrete Diffusion LLM, dLLM）}作为一种新兴的替代范式，通过迭代去噪的方式生成文本，天然支持并行解码和双向上下文建模。\textbf{LLaDA2.0} \cite{llada2} 首次将扩散语言模型扩展到100B参数规模（LLaDA2.0-flash）和16B参数规模（LLaDA2.0-mini），证明了该范式在前沿规模实际部署中的可行性。
+
+\subsubsection{从AR到dLLM的知识继承}
+从零开始训练大规模扩散语言模型成本高昂且技术不成熟。LLaDA2.0 提出了一种\textbf{知识继承}的策略：利用已有的高质量AR模型（如Ling-mini-2.0和Ling-flash-2.0）作为初始化，通过系统性的转换过程保留语言知识的同时引入扩散能力。这种方法避免了从头训练的不稳定性，并充分利用了AR模型经过大规模语料验证的表征能力。
+
+\subsubsection{Warmup-Stable-Decay（WSD）训练策略}
+LLaDA2.0 提出了创新的三阶段持续预训练（CPT）范式——\textbf{WSD策略}，用于平滑地将AR模型转换为扩散模型：
+\begin{itemize}
+    \item \textbf{Warmup阶段（渐进式块大小扩展）}：将AR模型视为块大小为1的特殊块扩散（BDLM）模型，然后逐步增加块大小（$1 \to 4 \to 32 \to 64 \to 4096$），最终使整个序列作为单一块处理，等价于标准的掩码扩散语言模型（MDLM）。每次块大小转换都在适度规模的数据上训练，确保平滑适应。
+    \item \textbf{Stable阶段（大规模MDLM训练）}：当块大小达到4096后，模型进入全序列掩码扩散范式。此时注意力计算中的"clean"部分不再需要维护，计算效率显著提升。模型在大规模语料上深化对扩散动力学的理解。
+    \item \textbf{Decay阶段（块大小衰减）}：将块大小从4096逐步缩减至32，将MDLM阶段学到的全局上下文知识蒸馏到紧凑的块结构中，恢复BDLM的实用优势（如KV-cache复用和快速变长生成）。
+\end{itemize}
+
+为了防止打包训练序列中不同文档之间形成错误的长程依赖，LLaDA2.0 引入了\textbf{文档级注意力掩码}，将自注意力严格限制在各文档边界内，确保双向建模的语义一致性和训练稳定性。
+
+\subsubsection{并行解码与双向推理的优势}
+与自回归模型的顺序生成不同，扩散语言模型具有两大关键优势：
+\begin{itemize}
+    \item \textbf{并行生成}：通过从随机掩码输入重建序列，模型可以在单个前向传播中同时预测多个Token，突破了AR模型的顺序生成瓶颈。这对于需要快速响应的机器人控制尤为重要。
+    \item \textbf{双向上下文}：扩散模型在重建过程中可以利用完整的双向上下文信息，而非AR模型仅依赖的左侧历史。这对于需要整体理解和前后一致性的任务（如代码生成、复杂规划、约束满足问题）尤为有利。
+\end{itemize}
+
+\subsubsection{后训练优化：SFT、CAP与DPO}
+LLaDA2.0 的后训练阶段包含三个关键组件：
+\begin{itemize}
+    \item \textbf{互补掩码（Complementary Masking）}：在SFT阶段，对每个训练样本生成主掩码和其逻辑取反的互补掩码，确保每个Token位置都有一次未被掩码的机会，实现接近100\%的数据利用率并加速收敛。
+    \item \textbf{置信度感知并行训练（CAP）}：引入辅助置信度损失$\mathcal{L}_{conf}$，选择性地最小化正确预测Token的输出分布熵。这使模型的预测更加"锐利"和确定，从而在推理时支持更激进、更高效的并行解码策略，而不降低生成质量。
+    \item \textbf{扩散DPO适配}：由于扩散模型的log-likelihood难以直接计算，LLaDA2.0 使用ELBO（Evidence Lower Bound）替代条件对数似然来定义DPO目标，从而实现对扩散模型的偏好对齐。
+\end{itemize}
+
+在47个基准测试中，LLaDA2.0-flash（100B参数）与Qwen3-30B-A3B-Instruct-2507等强AR模型持平（平均分73.18 vs 73.60），并在代码生成（HumanEval: 94.51）、智能体任务（BFCL v3: 75.43）和高级数学（AIME 2025: 60.00）等领域展现出超越AR模型的潜力。
+
+\subsubsection{对导航的启示}
+扩散语言模型的并行生成和双向推理特性与导航任务的需求高度契合：（1）\textbf{低延迟推理}：并行解码可以显著减少长序列动作规划的延迟，满足实时控制需求；（2）\textbf{整体规划}：双向上下文允许模型在生成动作序列时同时考虑前序约束和后续目标，实现更一致的长程规划；（3）\textbf{约束满足}：扩散模型在需要满足多重约束的生成任务中表现优异，这与导航中同时满足路径可行性、障碍物避让和目标到达的需求相似；（4）\textbf{与强化学习的兼容性}：LLaDA2.0 展示了如何将DPO等偏好学习算法适配到扩散模型，为导航任务中的人类偏好对齐（如路径平滑性、社会规范遵守）提供了新的技术路径。
+
+\subsection{导航中的可验证奖励（Verifiable Rewards, RLVR）}
+GRPO 的成功依赖于能否定义准确、客观的奖励函数。在导航任务中，奖励的设计已经从单一的成功率扩展到了多维度的\textbf{可验证奖励（RLVR）}体系 \cite{verifiable_rewards}。
+
+以 Nav-R1   和 OctoNav-R1   为例，其奖励函数 $R_{total}$ 通常包含三个互补的组件：
+\begin{itemize}
+    \item \textbf{格式奖励（Format Reward, $R_{format}$）}：验证模型的输出是否严格遵循结构化要求（如 \texttt{<think>...</think><action>...</action>}）。这是一个二值奖励（0/1），确保模型的可解析性。
+    \item \textbf{导航奖励（Navigation Reward, $R_{nav}$）}：评估任务的完成质量。通常包括：
+    \begin{itemize}
+        \item \textbf{成功奖励}：到达目标点给正奖励。
+        \item \textbf{SPL奖励}：根据路径长度加权的成功率（Success weighted by Path Length），鼓励高效路径。
+        \item \textbf{DTW奖励}：在RxR等任务中，评估预测轨迹与参考轨迹的动态时间规整（DTW）相似度，鼓励轨迹保真度。
+        \item \textbf{终点距离惩罚}：$R_{end} = \exp(-k \cdot ||p_{pred} - p_{gt}||^2)$，鼓励尽可能接近终点  。
+    \end{itemize}
+    \item \textbf{理解奖励（Understanding Reward, $R_{und}$）}：评估推理内容的语义正确性。虽然推理过程难以完全验证，但可以通过 CLIP Score 来计算推理文本与当前视觉观测的语义一致性，或者检查推理中提到的物体是否真实存在于场景中，从而给予“伪可验证”的奖励  。
+\end{itemize}
+
+\subsection{ETP-R1：图空间上的闭环强化微调}
+ETP-R1   将上述RL范式创新性地应用于图基导航。
+\begin{itemize}
+    \item \textbf{闭环优化}：不同于VLA模型通常采用的“开环”RL（仅优化单步预测），ETP-R1 在完整的导航回合（Episode）中进行优化。智能体在拓扑图上进行多步规划，直到任务结束才计算奖励。
+    \item \textbf{图空间的优势}：由于动作空间是高层的图节点选择，决策步数远少于底层控制，这使得RL的\textbf{信用分配（Credit Assignment）}问题变得更加容易解决。GRPO可以有效地将最终的任务成功奖励传播回早期的关键规划步骤，从而训练出具备长远眼光的规划器  。
+\end{itemize}
+
+\section{数据工程与基础模型：ETP-R1的综合实践}
+高质量的数据是训练高性能导航模型的前提。ETP-R1   不仅在模型架构和RL策略上进行了创新，更在数据工程上展示了当前最先进的实践（Best Practices）。
+
+\subsection{数据稀缺与合成数据引擎}
+真实的机器人导航数据极其昂贵且稀缺。传统的解决方案是使用“Speaker Model”合成指令，但这类模型生成的语言往往模式单一、缺乏细节且容易包含幻觉。
+
+ETP-R1 引入了基于 Gemini API 的数据引擎：
+\begin{itemize}
+    \item \textbf{指令重标注}：利用Gemini强大的多模态理解能力，对现有的导航轨迹（如R2R数据集）进行重新标注。生成的指令不仅语言风格多样（Linguistic Diversity），而且能够精确描述环境中的长尾物体和几何细节，极大地降低了指令中的幻觉率（Hallucination Rate）  。
+    \item \textbf{Nav-CoT 数据集}：Nav-R1   和 OctoNav   更是利用大模型构建了包含详细推理步骤的 CoT 数据集（如 Nav-CoT-110K, TBA-CoT）。这些数据不仅包含“怎么做”，还包含“为什么这么做”，为模型的冷启动（Cold Start）和推理能力训练提供了关键监督信号。
+\end{itemize}
+
+\subsection{被动数据的价值挖掘：MBRA}
+除了合成数据，如何利用海量的、无动作标签的“被动数据”（Passive Data，如 YouTube 视频或众包遥操作数据）是另一个关键方向。MBRA (Model-Based ReAnnotation) \cite{mbra_drive} 提出了一种基于模型的重标注范式。
+\begin{itemize}
+    \item \textbf{短程专家模型}：MBRA 首先在一个小的干净数据集上训练一个基于模型预测控制（MPC）原理的短程专家模型。
+    \item \textbf{大规模重标注}：利用该专家模型，对海量的噪声众包数据（如 FrodoBots-2k）进行动作重标注（Relabeling），清洗出高质量的轨迹-动作对。
+    \item \textbf{LogoNav 策略}：最终，利用这些清洗后的数据训练出的 LogoNav 策略，能够在全球不同城市的复杂户外环境中实现长距离（300米+）的鲁棒导航。这证明了通过算法手段提升数据质量，可以有效弥补真实机器人数据的稀缺性 \cite{mbra_drive}。
+\end{itemize}
+
+\subsection{联合预训练（Joint Pre-training）}
+为了打破单一数据集的局限性，ETP-R1 采用了\textbf{联合预训练}策略，将 R2R（短指令、以房间为单位）和 RxR \cite{ku2020rxr}（长指令、细粒度时空对齐）的数据集统一起来。这种跨域训练使得模型能够学习到更加通用和鲁棒的导航表征，显著提升了泛化能力  。
+
+\section{总结与展望}
+具身导航领域正处于从“几何感知”向“认知推理”跃迁的关键时期。通过对现有文献的深度梳理，我们可以清晰地看到以下技术趋势的收敛：
+\begin{itemize}
+    \item \textbf{感知层}：从语义抽象的CLIP走向几何感知的 DINOv2 和动态高分辨率的 InternVL 2.5，为智能体提供了更精细的物理世界表征。VL-JEPA \cite{vl_jepa} 进一步探索了嵌入空间预测范式，为实时视觉理解提供了高效解决方案。
+    \item \textbf{架构层}：ETP-R1 证明了将高效的\textbf{拓扑图结构}与强大的\textbf{VLA大模型}相结合，是平衡计算效率与推理能力的最佳路径。图结构提供了记忆和空间一致性，而大模型提供了泛化能力。
+    \item \textbf{推理层}：TBA 和 Fast-in-Slow 范式赋予了智能体“三思而后行”的能力，而 Aux-Think 则探索了将这种能力内化为直觉的高效路径。
+    \item \textbf{学习层}：基于 GRPO 和\textbf{可验证奖励}的在线强化学习（Online RFT），正在取代简单的模仿学习，成为赋予智能体鲁棒性和自我进化能力的标准范式。LLaDA2.0 \cite{llada2} 展示的扩散语言模型范式为大模型的并行生成和双向推理提供了新的可能性。
+\end{itemize}
+
+未来的研究将进一步探索 Sim-to-Real 的无缝迁移（如UrbanVLA的轨迹提升技术），以及如何将\textbf{社会规范（Social Norms）}等更复杂的奖励信号引入到RL微调中，最终实现真正具备人类级认知能力的具身智能体。
+
+\begin{table}[htbp]
+    \centering
+    \caption{主流具身导航框架对比分析}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l|c|c|c|c|c}
+        \hline
+        \textbf{特性} & \textbf{ETP-R1} & \textbf{OctoNav-R1} & \textbf{Nav-R1} & \textbf{Uni-NaVid} & \textbf{Aux-Think} \\
+        \hline
+        \textbf{核心表征} & 拓扑图 (Graph) & 端到端 VLA & 端到端 VLA & 端到端 VLA & 端到端 VLA \\
+        \hline
+        \textbf{推理范式} & 隐式规划 / RFT & TBA & Fast-in-Slow & 标准 / 多任务 & Aux-Think \\
+        \hline
+        \textbf{动作空间} & 高层路点 & 底层原子动作 & 底层原子动作 & 底层原子动作 & 底层原子动作 \\
+        \hline
+        \textbf{训练流水线} & 预训练 $\to$ 在线SFT $\to$ 在线RFT & Action-SFT $\to$ TBA-SFT $\to$ Nav-GRPO & 冷启动 $\to$ GRPO & 多任务 SFT & 辅助任务 SFT \\
+        \hline
+        \textbf{数据策略} & Gemini重标注; R2R+RxR & TBA-CoT 数据集 & Nav-CoT-110K & 视频-动作数据 & R2R-CoT-320k \\
+        \hline
+        \textbf{关键创新} & 图基闭环RFT; 高质量数据 & 通用多任务; 显式推理链 & 推理/控制解耦; 多维奖励 & 统一骨干 & 无推理测试 (No-Think) \\
+        \hline
+    \end{tabular}%
+    }
+    \label{tab:comparison}
+\end{table}
+
+\begingroup
+    \linespreadsingle{}
+    \printbibliography[title={参考文献}]
+\endgroup

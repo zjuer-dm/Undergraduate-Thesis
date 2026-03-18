@@ -1,0 +1,50 @@
+\section{问题提出的背景}
+\subsection{背景介绍}
+随着深度学习与机器人技术的深度融合，具身智能（Embodied AI）已成为人工智能领域的下一个重要前沿。作为具身智能的核心任务之一，视觉语言导航（Vision-and-Language Navigation, VLN）要求智能体理解自然语言指令，并在未曾见过的3D环境中进行感知和决策，最终到达目标位置。
+传统的VLN方法主要依赖于离散的导航图（Navigation Graphs），智能体在预定义的节点之间跳跃。这种设置虽然简化了导航问题，但严重限制了其在真实连续环境中的应用。VLN-CE（Continuous Environments）\cite{krantz2020beyond}将研究推向了连续空间，但现有的解决方案往往依赖于分层的导航架构\cite{bridging_gap}，即利用路点预测器生成中间目标，再由底层控制器执行，这种割裂的架构难以实现真正的端到端智能。
+近年来，大型视觉语言模型（LVLM）展现了强大的多模态理解和推理能力。然而，现有的LVLM导航工作多将模型仅作为高层规划器，通过文本描述（Captioning）将视觉转化为语言，这不仅丢失了关键的空间几何信息，也引入了推理延迟。如何充分利用LVLM的端到端能力，直接从第一人称视角图像序列（Egocentric Images）映射到连续的底层动作控制（Low-level Actions），并解决长时程导航中的误差累积问题，是当前研究的重点和难点。
+
+\subsection{相关研究工作}
+\subsubsection{视觉语言导航任务的发展}
+视觉语言导航（VLN）任务自2018年由Anderson等人提出R2R数据集以来，经历了从离散导航图到连续环境的演进。早期工作依托预定义的导航图，智能体在固定节点间跳转。2020年，Krantz等人提出VLN-CE基准\cite{krantz2020beyond}，将任务迁移至Habitat仿真器\cite{savva2019habitat}中的连续3D空间，要求智能体输出连续的速度和角速度控制指令。这一转变使VLN更贴近真实机器人应用场景，但也带来了更高的感知与控制复杂度。
+
+\subsubsection{大型视觉语言模型在导航中的应用}
+随着多模态大模型的兴起，研究者开始探索其在具身智能中的潜力。近期的OpenVLA\cite{kim2024openvla}、OmniVLA\cite{omnivla}等工作将视觉-语言-动作（VLA）模型引入机器人控制，展现了端到端学习的潜力。然而，传统的VLM导航方法往往将模型仅作为高层语义规划器，通过场景描述生成导航策略。这类方法存在两大局限：（1）文本化的视觉表示丢失了空间几何信息；（2）需要额外的底层控制器，无法实现真正的端到端学习。
+
+\subsubsection{相关前沿工作：思维链推理在导航中的应用}
+近期的研究工作为本课题提供了重要参考，特别是在思维链（Chain-of-Thought, CoT）数据集构建与推理策略方面取得了突破性进展。
+
+\textbf{Aux-Think}\cite{aux_think}首次系统性地研究了VLN中的推理策略，对比了No-Think（直接动作预测）、Pre-Think（推理在前）和Post-Think（推理在后）三种范式。研究发现了\textbf{测试时推理崩溃（Test-time Reasoning Collapse, TRC）}现象：在测试时引入显式CoT推理反而降低了导航准确率。这是因为VLN环境是动态、部分可观测的，智能体在训练时仅接触最优轨迹，测试时进入偏离分布的状态后，CoT推理容易产生幻觉，导致错误累积。为此，Aux-Think提出将CoT作为训练时的\textbf{辅助监督信号}，而测试时直接预测动作，从而避免推理幻觉的风险。该工作同时发布了\textbf{R2R-CoT-320k}数据集，这是首个面向VLN的大规模CoT标注数据集，使用Qwen-2.5-VL-72B生成。
+
+\textbf{Nav-R1}\cite{nav_r1}进一步提出了基于GRPO的强化学习框架和\textbf{Fast-in-Slow双系统推理}范式。受认知科学双过程理论启发，该方法将长时程语义推理（慢系统）与低延迟反应控制（快系统）解耦，实现了推理一致性与实时响应的平衡。Nav-R1构建了\textbf{Nav-CoT-110K}数据集，采用Gemini 2.5 Pro生成高质量的逐步推理轨迹，并设计了三维奖励函数（格式奖励、理解奖励、导航奖励）用于GRPO训练。
+
+\textbf{OctoNav}\cite{octonav}提出了面向通用导航智能体的\textbf{混合训练范式（Hybrid Training Paradigm, HTP）}，包含四个阶段：Action-SFT → TBA-SFT → Nav-GRPO → Online RL。其核心创新是\textbf{Think-Before-Action（TBA）}范式：训练模型在输出动作前先生成思维过程，这里的格式大致如下所示：（\texttt{<Think>...</Think>}\texttt{<Action>...</Action>}格式），从而增强模型的推理能力。OctoNav构建了\textbf{TBA-CoT}数据集，利用Qwen-VL进行视觉描述、DeepSeek-R1生成推理链，为导航决策提供可解释的思维过程。
+
+这些前沿工作共同揭示了CoT在导航任务中的独特挑战与机遇：（1）显式推理在测试时可能带来幻觉风险；（2）将CoT作为训练监督信号可以内化推理模式；（3）多阶段训练范式（SFT → GRPO → Online RL）是提升导航能力的有效路径。本课题借鉴这些思路，探索在VLN-CE任务中结合CoT监督与GRPO强化学习的方法。
+
+\subsubsection{拓扑图导航方法}
+针对VLN-CE中连续环境的复杂性，研究者提出了基于拓扑地图的导航方法。ETPNav\cite{etpnav}是该方向的代表性工作，它通过在线自组织的方式构建拓扑地图，将环境抽象为图表示$G_t = \langle N_t, E_t \rangle$，其中节点代表位置，边代表可达性。与传统的局部路点方法相比，拓扑地图能够高效捕捉全局环境布局，支持长程规划和回溯纠错。
+
+ETPNav的关键创新包括：（1）\textbf{纯深度路点预测器}：实验表明使用纯深度特征进行路点预测比RGBD特征更优，因为RGB语义信息可能导致对训练场景的过拟合；（2）\textbf{图感知自注意力（GASA）}：在跨模态融合时引入图拓扑结构，使注意力计算考虑节点间的空间关系；（3）\textbf{Tryout障碍物避让启发式}：通过试错机制检测并恢复导航死锁，在sliding-forbidden场景中几乎消除了性能损失。该方法在R2R-CE测试集上达到55\%成功率和48\% SPL，赢得了CVPR 2022 RxR-Habitat挑战赛冠军。
+
+\subsubsection{强化学习微调在VLN中的应用}
+强化学习（RL）在离散VLN中已有广泛应用，但直接应用于VLN-CE因扩展的动作空间和更长的轨迹而代价高昂。近期，大型语言模型的训练范式（SFT + RL，即RFT）被证明对提升模型能力高度有效。本课题借鉴这一思路，将\textbf{闭环强化微调（Closed-loop RFT）}应用于基于图的VLN模型，提出三阶段训练范式：
+
+\begin{enumerate}
+    \item \textbf{离线联合预训练}：统一R2R和RxR数据集进行预训练，并利用Gemini API生成高质量、低幻觉的合成指令，显著提升语言多样性（平均指令长度从31词增至48词）。
+    \item \textbf{在线监督微调（Online SFT）}：采用DAgger算法，以概率$p$选择专家动作、概率$1-p$采样模型动作，使智能体学会从自身错误中恢复。
+    \item \textbf{在线强化微调（Online RFT）}：采用\textbf{组相对策略优化（GRPO）}\cite{deepseek_r1}算法，通过组内样本的相对优势估计替代传统的价值网络，显著降低方差并提升训练稳定性。
+\end{enumerate}
+
+GRPO算法的核心是将奖励归一化为组内相对优势：$\hat{A}_i = (R_i - \bar{R}) / \sigma_R$，避免了显式价值函数的训练。采用该训练范式的模型在R2R-CE测试集上可达到64\%以上的成功率和54\%以上的SPL，显著超越现有方法。
+
+本研究借鉴这些前沿探索，引入2B规模的多模态大模型，并通过强化学习微调（GRPO\cite{deepseek_r1}）解决长时程导航中的奖励稀疏与训练不稳定问题。同时，针对真实机器人的4-View相机配置进行感知适配，结合DINOv2\cite{dinov2}视觉编码器的几何特征提取能力，实现从仿真到真实的技术迁移。
+
+\subsection{本研究的目的和意义}
+本研究旨在探索基于强化学习微调（Reinforcement Fine-Tuning, RFT）的端到端视觉语言导航新范式。通过构建面向连续控制的大规模视频-动作数据集，并引入组相对策略优化（GRPO\cite{deepseek_r1}），本课题致力于解决LVLM在长序列决策中的对齐与优化难题。
+本研究的意义主要体现在：
+\begin{itemize}
+    \item \textbf{理论意义}：探索如何将针对文本生成的大模型训练范式（SFT+RL）有效迁移至具身控制领域，验证了“语言即行动”在连续空间中的可行性。
+    \item \textbf{应用价值}：实现不依赖高精度地图和额外传感器的纯视觉导航，显著降低了机器人的部署成本，为服务机器人在家庭、办公等复杂环境中的自主导航提供了新的解决方案。特别是在基于4-View相机的低成本硬件方案上的适配研究（从12-View到4-View的特征迁移），为具身智能的落地提供了重要参考。
+\end{itemize}
+

@@ -1,0 +1,51 @@
+\section{研究计划进度安排及预期目标}
+
+\subsection{进度安排}
+根据任务书要求及课题实际难度，本毕业设计的进度安排如下：
+\begin{enumerate}
+    \item \textbf{2024.11.01—2024.11.30 资料收集与文献阅读}：查阅国内外关于具身智能、VLN及多模态大模型的最新文献，重点研读OpenVLA、OmniVLA、DeepSeek-R1等核心论文，理解GRPO算法原理与VLN-CE任务规范。
+    \item \textbf{2024.12.01—2024.12.28 方案设计与开题}：基于VLN-R1架构构思详细的技术路线，撰写开题报告。完成关于Vision-Transformer迁移（ResNet $\to$ DINOv2）的技术验证实验。通过从12-View到4-View的初步适配，验证感知方案的可行性。
+    \item \textbf{2025.01.01—2025.01.30 数据集构建}：在Habitat中配置Matterport3D仿真环境。编写Python脚本复现VLN-Ego数据生成流程，将R2R/RxR的离散轨迹转换为包含“视频-语言-思维链-动作”的四元组训练数据。
+    \item \textbf{2025.02.01—2025.03.15 模型搭建与SFT训练}：搭建Qwen2-VL训练框架，集成长短期记忆采样（Long-Short Memory Sampling）模块。在VLN-Ego数据集上进行监督微调（SFT），使模型具备基础的指令遵循能力。
+    \item \textbf{2025.03.16—2025.04.20 强化学习微调（RFT）}：实现组相对策略优化（GRPO）算法，设计时间衰减奖励（TDR）函数。在仿真环境中进行大规模RL训练，解决长时程导航中的误差累积问题。
+    \item \textbf{2025.04.21—2025.05.10 实验评估与论文撰写}：在Val-Unseen数据集上评估模型的SR、SPL等指标，与现有SOTA方法进行对比。整理实验数据和代码，完成毕业论文初稿。
+    \item \textbf{2025.05.11—2025.05.30 论文修改与答辩}：根据指导老师的意见修改完善论文，准备答辩PPT和演示视频，完成毕业答辩。
+\end{enumerate}
+
+\subsection{预期目标}
+\begin{enumerate}
+    \item \textbf{完成毕业论文与文献翻译}：撰写一篇高质量的本科毕业论文，字数不少于1.5万字；完成不少于3000词的外文文献翻译（包含VLN-R1、OmniVLA、GRPO三篇前沿论文）。
+    \item \textbf{构建VLN-Ego数据集}：构建一个面向连续控制的第一人称视觉语言导航数据集，包含不少于50k条视频-动作指令对，覆盖R2R训练集的所有场景。
+    \item \textbf{提出端到端导航算法}：实现基于Qwen2-VL和GRPO的端到端导航模型，在VLN-CE基准测试的Val-Unseen集合上实现以下性能指标：
+    \begin{itemize}
+        \item 导航成功率（SR）≥ 45\%（baseline约40\%）
+        \item SPL（Success weighted by Path Length）≥ 40\%
+        \item 轨迹长度加权的导航误差（NE）≤ 5.0m
+    \end{itemize}
+    \item \textbf{Sim-to-Real初步验证}：在仿真环境中验证4-View相机配置下的导航性能，并在物理仿真中模拟Seeker相机的深度噪声（误差±10cm），验证算法的鲁棒性。性能下降幅度控制在5\%以内。
+    \item \textbf{技术文档与开源}：整理完整的代码库，包括数据生成脚本、训练配置、模型权重，并撰写详细的技术文档，为后续研究提供参考。
+\end{enumerate}
+
+\subsection{风险评估与应对措施}
+\begin{enumerate}
+    \item \textbf{RL训练不稳定风险}：
+    \begin{itemize}
+        \item \textit{风险描述}：长序列导航任务的奖励稀疏，易导致训练崩溃或收敛缓慢。
+        \item \textit{应对措施}：采用GRPO算法降低方差；设置合理的learning rate schedule（warmup + cosine decay）；引入curriculum learning，从短指令逐步过渡到长指令。
+    \end{itemize}
+    \item \textbf{Sim-to-Real迁移Gap}：
+    \begin{itemize}
+        \item \textit{风险描述}：仿真环境与真实环境在光照、纹理、深度精度上存在差异，可能导致模型泛化失效。
+        \item \textit{应对措施}：在仿真训练阶段引入domain randomization（随机光照、纹理扰动）；利用真实Seeker相机采集的少量数据进行fine-tuning；采用FoundationStereo提供的鲁棒深度估计。
+    \end{itemize}
+    \item \textbf{计算资源与时间风险}：
+    \begin{itemize}
+        \item \textit{风险描述}：2B模型的RL训练需要大量GPU时间，可能超出预期进度。
+        \item \textit{应对措施}：优先完成SFT阶段并验证基础能力；RL训练采用参数高效方法（LoRA）；如时间紧张，可适当缩小RL训练的数据规模，确保至少完成核心实验。
+    \end{itemize}
+    \item \textbf{数据质量风险}：
+    \begin{itemize}
+        \item \textit{风险描述}：Qwen3-VL-2B-Thinking生成的CoT描述可能包含错误或不一致，影响模型学习。
+        \item \textit{应对措施}：对生成的CoT进行人工抽样检查（至少10\%样本）；设计自动化过滤规则（如检测矛盾的方向指令）；在SFT阶段监控验证集loss，及时发现数据问题。
+    \end{itemize}
+\end{enumerate}

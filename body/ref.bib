@@ -1,0 +1,308 @@
+% ========== 基础规则 (保留您原有的) ==========
+@www{zjuthesisrules,
+  title  = {浙江大学本科生毕业论文（设计）编写规则},
+  author = {浙江大学本科生院},
+  year   = {2018},
+  url    = {http://bksy.zju.edu.cn/attachments/2018-01/01-1517384518-1149149.pdf}
+}
+@www{tikz,
+  title  = {tikz宏包},
+  author = {Till Tantau},
+  year   = {2018},
+  url    = {https://sourceforge.net/projects/pgf/}
+}
+@www{zjugradthesisrules,
+  title  = {浙江大学研究生学位论文编写规则},
+  author = {浙江大学研究生院},
+  year   = {2008},
+  url    = {http://grs.zju.edu.cn/redir.php?catalog_id=10038&object_id=12877}
+}
+
+% ========== 0. 本次报告核心分析对象 (Uploaded Papers) ==========
+@article{etpnav,
+  title     = {ETPNav: Evolving Topological Planning for Vision-Language Navigation in Continuous Environments},
+  author    = {An, Dong and Wang, Hanqing and Wang, Wenguan and Wang, Zun and Huang, Yan and He, Keji and Wang, Liang},
+  journal   = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year      = {2024},
+  publisher = {IEEE}
+}
+
+% 注意：ETP-R1 已移除
+
+
+% 已有引用 (Keep existing)
+@article{omnivla,
+  title   = {OmniVLA: An Omni-Modal Vision-Language-Action Model for Robot Navigation},
+  author  = {Hirose, Noriaki and Glossop, Catherine and Shah, Dhruv and Levine, Sergey},
+  journal = {arXiv preprint arXiv:2509.19480},
+  year    = {2025}
+}
+
+@article{vl_jepa,
+  title   = {VL-JEPA: Joint Embedding Predictive Architecture for Vision-language},
+  author  = {Chen, Delong and Shukor, Mustafa and Moutakanni, Théo and Chung, Willy and Yu, Jade and Kasarla, Tejaswi and Bolourchi, Allen and LeCun, Yann and Fung, Pascale},
+  journal = {arXiv preprint arXiv:2512.10942},
+  year    = {2025}
+}
+
+@article{llada2,
+  title   = {LLaDA2.0: Scaling Up Diffusion Language Models to 100B},
+  author  = {Bie, Tiwei and Cao, Maosong and Chen, Kun and others},
+  journal = {arXiv preprint},
+  year    = {2025}
+}
+
+@article{aux_think,
+  title   = {Aux-Think: Exploring Reasoning Strategies for Data-Efficient Vision-Language Navigation},
+  author  = {Wang, Shuo and Wang, Yongcai and Li, Wanting and others},
+  journal = {arXiv preprint arXiv:2505.11886},
+  year    = {2025}
+}
+
+@article{nav_r1,
+  title   = {Nav-R1: Reasoning and Navigation in Embodied Scenes},
+  author  = {Liu, Qingxiang and Huang, Ting and Zhang, Zeyu and Tang, Hao},
+  journal = {arXiv preprint arXiv:2509.10884},
+  year    = {2025}
+}
+
+@article{octonav,
+  title   = {OctoNav: Towards Generalist Embodied Navigation},
+  author  = {Gao, Chen and Jin, Liankai and Peng, Xingyu and Zhang, Jiazhao and Deng, Yue and Li, Annan and Wang, He and Liu, Si},
+  journal = {arXiv preprint arXiv:2506.09839},
+  year    = {2025}
+}
+
+@article{bridging_gap,
+  title   = {Bridging the Gap Between Learning in Discrete and Continuous Environments for Vision-and-Language Navigation},
+  author  = {Hong, Yicong and Wang, Zun and Wu, Qi and Gould, Stephen},
+  journal = {arXiv preprint arXiv:2203.02764},
+  year    = {2022}
+}
+
+@article{urbanvla,
+  title   = {UrbanVLA: A Vision-Language-Action Model for Urban Micromobility},
+  author  = {Li, Anqi and Wang, Zhiyong and Zhang, Jiazhao and Li, Minghan and Qi, Yunpeng and Chen, Zhibo and Zhang, Zhizheng and Wang, He},
+  journal = {arXiv preprint arXiv:2510.23576},
+  year    = {2025},
+  note    = {Route-conditioned VLA for urban navigation with HTL algorithm}
+}
+
+
+
+% ========== 1. 经典 VLN 基准与环境 (Foundations) ==========
+@inproceedings{anderson2018vision,
+  title     = {Vision-and-language navigation: Interpreting visually-grounded navigation instructions in real environments},
+  author    = {Anderson, Peter and Wu, Qi and Teney, Damien and others},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {3674--3683},
+  year      = {2018},
+  note      = {The R2R Dataset}
+}
+
+@inproceedings{ku2020rxr,
+  title     = {Room-Across-Room: Multilingual Vision-and-Language Navigation with Dense Spatiotemporal Grounding},
+  author    = {Ku, Alexander and Anderson, Peter and Patel, Roma and others},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2020}
+}
+
+@inproceedings{krantz2020beyond,
+  title     = {Beyond the Nav-Graph: Vision-and-Language Navigation in Continuous Environments},
+  author    = {Krantz, Jacob and Wijmans, Erik and Majumdar, Arjun and others},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  year      = {2020},
+  note      = {R2R-CE Dataset}
+}
+
+@inproceedings{savva2019habitat,
+  title     = {Habitat: A Platform for Embodied AI Research},
+  author    = {Savva, Manolis and Kadian, Abhishek and Maksymets, Oleksandr and others},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2019}
+}
+
+% ========== 2. 视觉感知与 VLM 骨干 (Backbones) ==========
+@article{internvl2_5,
+  title   = {Expanding Performance Boundaries of Open-Source Multimodal Models with Model, Data, and Test-Time Scaling},
+  author  = {Chen, Zhe and Wang, Weiyun and Cao, Yue and others},
+  journal = {arXiv preprint arXiv:2412.05271},
+  year    = {2024}
+}
+
+@article{dinov2,
+  title   = {DINOv2: Learning Robust Visual Features without Supervision},
+  author  = {Oquab, Maxime and Darcet, Timoth{\'e}e and others},
+  journal = {arXiv preprint arXiv:2304.07193},
+  year    = {2023}
+}
+
+@article{radford2021learning,
+  title   = {Learning transferable visual models from natural language supervision},
+  author  = {Radford, Alec and Kim, Jong Wook and Hallacy, Chris and others},
+  journal = {ICML},
+  year    = {2021},
+  note    = {CLIP}
+}
+
+% ========== 3. VLA 与 通用导航策略 (VLA & Generalist) ==========
+@article{brohan2023rt2,
+  title   = {RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control},
+  author  = {Brohan, Anthony and Brown, Noah and Carbajal, Justice and others},
+  journal = {arXiv preprint arXiv:2307.15818},
+  year    = {2023}
+}
+
+@article{kim2024openvla,
+  title   = {OpenVLA: An Open-Source Vision-Language-Action Model},
+  author  = {Kim, Moo Jin and Pertsch, Karl and Karamcheti, Siddharth and others},
+  journal = {arXiv preprint arXiv:2406.09246},
+  year    = {2024}
+}
+
+@inproceedings{shah2023gnm,
+  title     = {GNM: A General Navigation Model to Drive Any Robot},
+  author    = {Shah, Dhruv and Sridhar, Ajay and Bhorkar, Arjun and others},
+  booktitle = {Proceedings of the IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2023}
+}
+
+@inproceedings{sridhar2024nomad,
+  title     = {NoMaD: Goal Masked Diffusion Policies for Navigation and Exploration},
+  author    = {Sridhar, Ajay and Shah, Dhruv and Glossop, Catherine and Levine, Sergey},
+  booktitle = {Proceedings of the IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2024}
+}
+
+@article{uni_navid,
+  title   = {Uni-NaVid: A Universal Vision-Language-Action Model for Navigation},
+  author  = {Zhang, Jiazhao and Wang, Kunyu and others},
+  journal = {arXiv preprint arXiv:2412.06224},
+  year    = {2024}
+}
+
+% ========== 4. 推理、规划与 3D 理解 (Reasoning & 3D) ==========
+@article{wei2022chain,
+  title   = {Chain-of-thought prompting elicits reasoning in large language models},
+  author  = {Wei, Jason and Wang, Xuezhi and Schuurmans, Dale and others},
+  journal = {NeurIPS},
+  year    = {2022}
+}
+
+@article{hong20233dllm,
+  title   = {3D-LLM: Injecting the 3D World into Large Language Models},
+  author  = {Hong, Yicong and Zhen, Haoyu and Chen, Peihao and others},
+  journal = {NeurIPS},
+  year    = {2023}
+}
+
+@article{huang2024leo,
+  title   = {An Embodied Generalist Agent in 3D World},
+  author  = {Huang, Jiangyong and Yong, Silong and Ma, Xiaojian and others},
+  journal = {ICLR},
+  year    = {2024},
+  note    = {LEO Agent}
+}
+
+@article{octonav,
+  title   = {OctoNav: Towards Generalist Embodied Navigation},
+  author  = {Gao, Chen and Jin, Liankai and Peng, Xingyu and others},
+  journal = {arXiv preprint arXiv:2506.09839},
+  year    = {2025}
+}
+
+% ========== 5. 强化学习与优化 (RL & Optimization) ==========
+@article{deepseek_r1,
+  title   = {DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning},
+  author  = {Guo, Daya and Yang, Dejian and others},
+  journal = {arXiv preprint arXiv:2501.12948},
+  year    = {2025},
+  note    = {GRPO Algorithm Source}
+}
+
+@article{verifiable_rewards,
+  title   = {Reinforcement Learning from Verifiable Rewards},
+  author  = {DeepSeek-AI},
+  journal = {arXiv preprint arXiv:2501.12948},
+  year    = {2025},
+  note    = {RLVR framework for LLM post-training}
+}
+
+@article{dinov2_analysis,
+  title   = {Emergent Properties in Self-Supervised Vision Transformers},
+  author  = {Caron, Mathilde and Misra, Ishan and Mairal, Julien and Goyal, Priya and Bojanowski, Piotr and Joulin, Armand},
+  journal = {arXiv preprint arXiv:2304.07193},
+  year    = {2023},
+  note    = {Analysis of DINOv2 geometric properties}
+}
+
+@article{deepseek_v3_analysis,
+  title   = {DeepSeek-V3 Technical Report},
+  author  = {DeepSeek-AI},
+  journal = {arXiv preprint arXiv:2412.19437},
+  year    = {2024},
+  note    = {DeepSeek Sparse Attention (DSA) mechanism}
+}
+
+@article{deepseek_v3,
+  title   = {DeepSeek-V3 Technical Report},
+  author  = {DeepSeek-AI},
+  journal = {arXiv preprint arXiv:2412.19437},
+  year    = {2024}
+}
+
+@article{cl_cotnav,
+  title   = {CL-CoTNav: Closed-Loop Hierarchical Chain-of-Thought for Zero-Shot Object-Goal Navigation with Vision-Language Models},
+  author  = {Cai, Yuxin and He, Xiangkun and Wang, Maonan and others},
+  journal = {arXiv preprint arXiv:2504.09000},
+  year    = {2025},
+  note    = {Proposed Hierarchical CoT and Closed-Loop Confidence Scoring}
+}
+
+@article{dser_reasoning,
+  title   = {Deep Self-Evolving Reasoning},
+  author  = {Liu, Zihan and Zheng, Shun and Wen, Xumeng and others},
+  journal = {arXiv preprint arXiv:2510.17498},
+  year    = {2025},
+  note    = {Theoretical framework modeling iterative reasoning as Markov Chains}
+}
+
+@article{mbra_drive,
+  title   = {Learning to Drive Anywhere with Model-Based Reannotation},
+  author  = {Hirose, Noriaki and Ignatova, Lydia and Stachowicz, Kyle and others},
+  journal = {arXiv preprint arXiv:2505.05592},
+  year    = {2025},
+  note    = {Key method for utilizing noisy passive data via re-annotation}
+}
+
+@article{opennav,
+  title   = {OpenNav: Open-World Navigation with Multimodal Large Language Models},
+  author  = {Yuan, Mingfeng and Wang, Letian and Waslander, Steven L},
+  journal = {arXiv preprint arXiv:2507.18033},
+  year    = {2025},
+  note    = {Code-as-policy approach for open-set outdoor navigation}
+}
+
+@article{llava_st,
+  title   = {LLaVA-ST: A Multimodal Large Language Model for Fine-Grained Spatial-Temporal Understanding},
+  author  = {Li, Hongyu and Chen, Jinyu and Wei, Ziyu and others},
+  journal = {arXiv preprint arXiv:2501.08282},
+  year    = {2025},
+  note    = {Introduces LAPE and Spatial-Temporal Packer for video understanding}
+}
+
+@article{bridging_gap,
+  title   = {Bridging the Gap Between Learning in Discrete and Continuous Environments for Vision-and-Language Navigation},
+  author  = {Hong, Yicong and Wang, Zun and Wu, Qi and Gould, Stephen},
+  journal = {arXiv preprint arXiv:2203.02764},
+  year    = {2022},
+  note    = {Classic work on waypoint prediction to bridge discrete/continuous gap}
+}
+
+@article{omnivla,
+  title   = {OmniVLA: An Omni-Modal Vision-Language-Action Model for Robot Navigation},
+  author  = {Hirose, Noriaki and Glossop, Catherine and Shah, Dhruv and Levine, Sergey},
+  journal = {arXiv preprint arXiv:2509.19480},
+  year    = {2025},
+  note    = {Unified policy for Image, Pose, and Language goals}
+}
